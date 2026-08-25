@@ -1,0 +1,15 @@
+﻿# Dependencies & Build artifacts
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Environment & Editor
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
