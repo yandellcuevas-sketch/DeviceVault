@@ -1,9 +1,9 @@
-﻿import { db } from '../db';
-import type { Device, BackupData } from '../types/device';
+import { db } from '../db';
+import { validateBackupSchema, sanitizeDeviceFromBackup } from './backupValidation';
 
 export async function exportDatabaseToJSON(): Promise<void> {
   const devices = await db.devices.toArray();
-  const backup: BackupData = {
+  const backup = {
     version: '1.0.0',
     exportedAt: new Date().toISOString(),
     deviceCount: devices.length,
@@ -24,60 +24,79 @@ export async function exportDatabaseToJSON(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+export interface ImportResult {
+  success: boolean;
+  count: number;
+  error?: string;
+  warnings?: string[];
+}
+
 export async function importDatabaseFromJSON(
   file: File,
   mode: 'replace' | 'merge' = 'replace'
-): Promise<{ success: boolean; count: number; error?: string }> {
+): Promise<ImportResult> {
+  // Limite de tamano de archivo: 500 MB
+  const MAX_FILE_SIZE = 500 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE) {
+    return { success: false, count: 0, error: 'El archivo es demasiado grande (maximo 500 MB).' };
+  }
+
+  let rawData: unknown;
   try {
     const text = await file.text();
-    const data = JSON.parse(text) as Partial<BackupData>;
-
-    if (!data.devices || !Array.isArray(data.devices)) {
-      return { success: false, count: 0, error: 'El archivo no contiene un formato de respaldo válido de DeviceVault.' };
-    }
-
-    const devicesToImport: Device[] = data.devices.map((d: any) => ({
-      id: d.id || crypto.randomUUID(),
-      type: d.type || 'other',
-      brand: d.brand || 'Desconocido',
-      model: d.model || 'Dispositivo',
-      customName: d.customName || '',
-      modelNumber: d.modelNumber || '',
-      color: d.color || '',
-      storage: d.storage || '',
-      ram: d.ram || '',
-      os: d.os || '',
-      imei1: d.imei1 || '',
-      imei2: d.imei2 || '',
-      serialNumber: d.serialNumber || '',
-      eid: d.eid || '',
-      phoneCarrier: d.phoneCarrier || '',
-      purchaseDate: d.purchaseDate || '',
-      purchasePrice: typeof d.purchasePrice === 'number' ? d.purchasePrice : undefined,
-      purchaseCurrency: d.purchaseCurrency || 'USD',
-      purchaseLocation: d.purchaseLocation || '',
-      warrantyExpiration: d.warrantyExpiration || '',
-      insuranceInfo: d.insuranceInfo || '',
-      status: d.status || 'in_use',
-      condition: d.condition || '',
-      notes: d.notes || '',
-      tags: Array.isArray(d.tags) ? d.tags : [],
-      mainPhoto: d.mainPhoto || undefined,
-      additionalPhotos: Array.isArray(d.additionalPhotos) ? d.additionalPhotos : [],
-      createdAt: typeof d.createdAt === 'number' ? d.createdAt : Date.now(),
-      updatedAt: typeof d.updatedAt === 'number' ? d.updatedAt : Date.now(),
-    }));
-
-    if (mode === 'replace') {
-      await db.devices.clear();
-      await db.devices.bulkAdd(devicesToImport);
-    } else {
-      // Modo Merge: upsert por ID
-      await db.devices.bulkPut(devicesToImport);
-    }
-
-    return { success: true, count: devicesToImport.length };
-  } catch (err: any) {
-    return { success: false, count: 0, error: err.message || 'Error al procesar el archivo JSON.' };
+    rawData = JSON.parse(text);
+  } catch {
+    return { success: false, count: 0, error: 'El archivo no es un JSON valido. Verifica que no este corrupto.' };
   }
+
+  // Validacion estricta de schema
+  const validation = validateBackupSchema(rawData);
+
+  if (!validation.valid) {
+    const topErrors = validation.errors.slice(0, 3).map((e) => `[${e.field}]: ${e.message}`).join(' | ');
+    return {
+      success: false,
+      count: 0,
+      error: `El archivo no pasa la validacion de formato DeviceVault. ${topErrors}${validation.errors.length > 3 ? ` ... y ${validation.errors.length - 3} error(es) mas.` : ''}`,
+      warnings: validation.warnings,
+    };
+  }
+
+  // Sanitizar todos los dispositivos antes de persistir
+  const backup = rawData as { devices: Array<Record<string, unknown>> };
+  const devicesToImport = backup.devices.map(sanitizeDeviceFromBackup);
+
+  if (mode === 'replace') {
+    // TRANSACCION ATOMICA: validar, preparar, y solo entonces reemplazar.
+    // Si cualquier parte falla, Dexie hace rollback automatico.
+    try {
+      await db.transaction('rw', db.devices, async () => {
+        await db.devices.clear();
+        await db.devices.bulkAdd(devicesToImport);
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al escribir en la base de datos.';
+      return {
+        success: false,
+        count: 0,
+        error: `La importacion fallo durante la escritura. Tus datos anteriores se conservan intactos. Detalle: ${msg}`,
+        warnings: validation.warnings,
+      };
+    }
+  } else {
+    // Modo Merge: upsert por ID (no borra datos previos)
+    try {
+      await db.devices.bulkPut(devicesToImport);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al combinar datos.';
+      return {
+        success: false,
+        count: 0,
+        error: `Error en modo Combinar: ${msg}`,
+        warnings: validation.warnings,
+      };
+    }
+  }
+
+  return { success: true, count: devicesToImport.length, warnings: validation.warnings };
 }
