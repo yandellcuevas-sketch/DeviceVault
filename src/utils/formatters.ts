@@ -45,10 +45,16 @@ export const DEVICE_STATUS_CONFIG: Record<DeviceStatus, { label: string; bg: str
     border: 'border-amber-500/30',
   },
   lost: {
-    label: 'Perdido',
-    bg: 'bg-red-500/10',
-    text: 'text-red-400',
-    border: 'border-red-500/30',
+    label: 'Extraviado',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
+    border: 'border-amber-500/30',
+  },
+  stolen: {
+    label: 'Robado',
+    bg: 'bg-red-500/20',
+    text: 'text-red-400 font-bold',
+    border: 'border-red-500/50',
   },
   other: {
     label: 'Otro',

@@ -465,7 +465,8 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
               <option value="stored">Guardado / Coleccion</option>
               <option value="sold">Vendido</option>
               <option value="repair">En reparacion</option>
-              <option value="lost">Perdido / Extraviado</option>
+              <option value="lost">Extraviado</option>
+              <option value="stolen">Robado</option>
               <option value="other">Otro</option>
             </select>
           </div>

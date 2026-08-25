@@ -11,7 +11,7 @@ export const VALID_DEVICE_TYPES: DeviceType[] = [
 ];
 
 export const VALID_DEVICE_STATUSES: DeviceStatus[] = [
-  'in_use', 'stored', 'sold', 'repair', 'lost', 'other',
+  'in_use', 'stored', 'sold', 'repair', 'lost', 'stolen', 'other',
 ];
 
 export const VALID_ACCESSORY_CATEGORIES: AccessoryCategory[] = [

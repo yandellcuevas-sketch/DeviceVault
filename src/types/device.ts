@@ -15,6 +15,7 @@ export type DeviceStatus =
   | 'sold' 
   | 'repair' 
   | 'lost' 
+  | 'stolen' 
   | 'other';
 
 export interface Device {
