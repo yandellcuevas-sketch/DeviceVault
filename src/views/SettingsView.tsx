@@ -5,10 +5,11 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 
 interface SettingsViewProps {
   deviceCount: number;
+  accessoryCount?: number;
   onRefresh: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ deviceCount, onRefresh }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ deviceCount, accessoryCount = 0, onRefresh }) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearedMsg, setClearedMsg] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -21,6 +22,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ deviceCount, onRefre
 
   const handleClearDatabase = async () => {
     await db.devices.clear();
+    await db.accessories.clear();
     setClearedMsg(true);
     onRefresh();
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -43,7 +45,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ deviceCount, onRefre
 
       {clearedMsg && (
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-300 text-xs">
-          La base de datos local ha sido restablecida completamente.
+          La base de datos local ha sido restablecida completamente (dispositivos y accesorios eliminados).
         </div>
       )}
 
@@ -58,8 +60,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ deviceCount, onRefre
             <div className="text-sm font-bold text-white font-mono">IndexedDB (Dexie.js)</div>
           </div>
           <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-1">
-            <span className="text-zinc-500 font-medium">Dispositivos Registrados:</span>
-            <div className="text-sm font-bold text-white font-mono">{deviceCount} equipos</div>
+            <span className="text-zinc-500 font-medium">Inventario:</span>
+            <div className="text-sm font-bold text-white font-mono">{deviceCount} equipos &bull; {accessoryCount} accesorios</div>
           </div>
           <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-1">
             <span className="text-zinc-500 font-medium">Ubicacion:</span>
@@ -85,14 +87,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ deviceCount, onRefre
         <button onClick={() => setShowClearConfirm(true)}
           className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-red-600/20 transition-all flex items-center gap-2 cursor-pointer">
           <Trash2 className="w-4 h-4" />
-          <span>Vaciar Todos los Dispositivos</span>
+          <span>Vaciar Todos los Dispositivos y Accesorios</span>
         </button>
       </div>
 
       <ConfirmDialog
         isOpen={showClearConfirm}
         title="Restablecer Boveda Completa?"
-        message={`Estas seguro de que deseas eliminar TODOS los ${deviceCount} dispositivos y sus fotos de este navegador? Te recomendamos exportar un respaldo primero.`}
+        message={`Estas seguro de que deseas eliminar TODOS los ${deviceCount} dispositivos y ${accessoryCount} accesorios de este navegador? Te recomendamos exportar un respaldo primero.`}
         confirmText="Si, Vaciar Todo"
         isDangerous={true}
         onConfirm={handleClearDatabase}

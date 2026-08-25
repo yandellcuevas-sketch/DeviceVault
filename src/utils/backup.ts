@@ -1,13 +1,21 @@
 import { db } from '../db';
-import { validateBackupSchema, sanitizeDeviceFromBackup } from './backupValidation';
+import {
+  validateBackupSchema,
+  sanitizeDeviceFromBackup,
+  sanitizeAccessoryFromBackup,
+} from './backupValidation';
 
 export async function exportDatabaseToJSON(): Promise<void> {
   const devices = await db.devices.toArray();
+  const accessories = await db.accessories.toArray();
+
   const backup = {
-    version: '1.0.0',
+    version: '2.0.0',
     exportedAt: new Date().toISOString(),
     deviceCount: devices.length,
     devices,
+    accessoryCount: accessories.length,
+    accessories,
   };
 
   const jsonString = JSON.stringify(backup, null, 2);
@@ -27,6 +35,7 @@ export async function exportDatabaseToJSON(): Promise<void> {
 export interface ImportResult {
   success: boolean;
   count: number;
+  accessoryCount?: number;
   error?: string;
   warnings?: string[];
 }
@@ -49,7 +58,7 @@ export async function importDatabaseFromJSON(
     return { success: false, count: 0, error: 'El archivo no es un JSON valido. Verifica que no este corrupto.' };
   }
 
-  // Validacion estricta de schema
+  // Validacion estricta de schema (Version, UUID, Fotos MIME/Base64, Types)
   const validation = validateBackupSchema(rawData);
 
   if (!validation.valid) {
@@ -57,36 +66,53 @@ export async function importDatabaseFromJSON(
     return {
       success: false,
       count: 0,
-      error: `El archivo no pasa la validacion de formato DeviceVault. ${topErrors}${validation.errors.length > 3 ? ` ... y ${validation.errors.length - 3} error(es) mas.` : ''}`,
+      error: `Validacion de respaldo fallida: ${topErrors}${validation.errors.length > 3 ? ` ... y ${validation.errors.length - 3} error(es) mas.` : ''}`,
       warnings: validation.warnings,
     };
   }
 
-  // Sanitizar todos los dispositivos antes de persistir
-  const backup = rawData as { devices: Array<Record<string, unknown>> };
+  const backup = rawData as {
+    devices: Array<Record<string, unknown>>;
+    accessories?: Array<Record<string, unknown>>;
+  };
+
   const devicesToImport = backup.devices.map(sanitizeDeviceFromBackup);
+  const accessoriesToImport = Array.isArray(backup.accessories)
+    ? backup.accessories.map(sanitizeAccessoryFromBackup)
+    : [];
 
   if (mode === 'replace') {
-    // TRANSACCION ATOMICA: validar, preparar, y solo entonces reemplazar.
-    // Si cualquier parte falla, Dexie hace rollback automatico.
+    // TRANSACCION ATOMICA: valida todo antes de tocar la DB
+    // Si falla cualquier parte, Dexie revierte devices y accessories automaticamente
     try {
-      await db.transaction('rw', db.devices, async () => {
+      await db.transaction('rw', [db.devices, db.accessories], async () => {
         await db.devices.clear();
-        await db.devices.bulkAdd(devicesToImport);
+        await db.accessories.clear();
+        if (devicesToImport.length > 0) {
+          await db.devices.bulkAdd(devicesToImport);
+        }
+        if (accessoriesToImport.length > 0) {
+          await db.accessories.bulkAdd(accessoriesToImport);
+        }
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al escribir en la base de datos.';
       return {
         success: false,
         count: 0,
-        error: `La importacion fallo durante la escritura. Tus datos anteriores se conservan intactos. Detalle: ${msg}`,
+        error: `La importacion fallo durante la escritura atomica. Tus datos anteriores se conservan intactos. Detalle: ${msg}`,
         warnings: validation.warnings,
       };
     }
   } else {
-    // Modo Merge: upsert por ID (no borra datos previos)
+    // Modo Merge: upsert por ID
     try {
-      await db.devices.bulkPut(devicesToImport);
+      if (devicesToImport.length > 0) {
+        await db.devices.bulkPut(devicesToImport);
+      }
+      if (accessoriesToImport.length > 0) {
+        await db.accessories.bulkPut(accessoriesToImport);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al combinar datos.';
       return {
@@ -98,5 +124,10 @@ export async function importDatabaseFromJSON(
     }
   }
 
-  return { success: true, count: devicesToImport.length, warnings: validation.warnings };
+  return {
+    success: true,
+    count: devicesToImport.length,
+    accessoryCount: accessoriesToImport.length,
+    warnings: validation.warnings,
+  };
 }

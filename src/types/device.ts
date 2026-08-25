@@ -1,4 +1,6 @@
-﻿export type DeviceType = 
+import type { Accessory } from './accessory';
+
+export type DeviceType = 
   | 'phone' 
   | 'tablet' 
   | 'computer' 
@@ -22,19 +24,25 @@ export interface Device {
   model: string;
   customName?: string;
   modelNumber?: string;
+  partNumber?: string;
   color?: string;
   storage?: string;
   ram?: string;
   os?: string;
   
-  // Identificadores
+  // Identificadores y Regulatorio
   imei1?: string;
   imei2?: string;
   serialNumber?: string;
   eid?: string;
+  iccid?: string;
+  upc?: string;
+  fccId?: string;
+  ic?: string;
+  country?: string;
   phoneCarrier?: string;
   
-  // Compra y Garantía
+  // Compra y Garantia
   purchaseDate?: string;
   purchasePrice?: number;
   purchaseCurrency?: string;
@@ -61,4 +69,6 @@ export interface BackupData {
   exportedAt: string;
   deviceCount: number;
   devices: Device[];
+  accessoryCount?: number;
+  accessories?: Accessory[];
 }

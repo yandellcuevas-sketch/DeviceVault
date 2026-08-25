@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { LayoutDashboard, Smartphone, PlusCircle, Search, Database } from 'lucide-react';
+import React from 'react';
+import { LayoutDashboard, Smartphone, Package, PlusCircle, Search } from 'lucide-react';
 import type { CurrentView } from './Sidebar';
 
 interface MobileNavProps {
@@ -11,9 +11,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentView, onViewChange 
   const items = [
     { id: 'dashboard' as CurrentView, label: 'Inicio', icon: LayoutDashboard },
     { id: 'gallery' as CurrentView, label: 'Equipos', icon: Smartphone },
-    { id: 'register' as CurrentView, label: '+ Nuevo', icon: PlusCircle },
+    { id: 'accessories' as CurrentView, label: 'Accesorios', icon: Package },
+    { id: 'register' as CurrentView, label: '+ Equipo', icon: PlusCircle },
     { id: 'imei_lookup' as CurrentView, label: 'Buscar', icon: Search },
-    { id: 'backup' as CurrentView, label: 'Backup', icon: Database },
   ];
 
   return (

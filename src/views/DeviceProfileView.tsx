@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Edit, Trash2, Copy, Check, Calendar, DollarSign, MapPin, ShieldCheck, Box, HardDrive, Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Copy, Check, Calendar, DollarSign, MapPin, ShieldCheck, Box, HardDrive, Eye, EyeOff, Image as ImageIcon, Package, Plus, Zap, ExternalLink } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db';
 import type { Device } from '../types/device';
-import { DEVICE_STATUS_CONFIG, formatCurrency, formatDate, DEVICE_TYPE_LABELS } from '../utils/formatters';
+import type { Accessory } from '../types/accessory';
+import { DEVICE_STATUS_CONFIG, formatCurrency, formatDate, DEVICE_TYPE_LABELS, ACCESSORY_CATEGORY_LABELS, ACCESSORY_STATUS_CONFIG } from '../utils/formatters';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Modal } from '../components/common/Modal';
 
@@ -10,9 +13,10 @@ interface DeviceProfileViewProps {
   onBack: () => void;
   onEdit: (device: Device) => void;
   onDelete: (deviceId: string) => void;
+  onSelectAccessory?: (accessory: Accessory) => void;
+  onAddAccessoryForDevice?: (deviceId: string) => void;
 }
 
-// Mascara un identificador mostrando solo los ultimos 4 caracteres
 function maskIdentifier(value: string): string {
   if (value.length <= 4) return '••••';
   return '•'.repeat(Math.min(value.length - 4, 11)) + ' ' + value.slice(-4);
@@ -65,6 +69,8 @@ export const DeviceProfileView: React.FC<DeviceProfileViewProps> = ({
   onBack,
   onEdit,
   onDelete,
+  onSelectAccessory,
+  onAddAccessoryForDevice,
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
@@ -72,9 +78,13 @@ export const DeviceProfileView: React.FC<DeviceProfileViewProps> = ({
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const linkedAccessories = useLiveQuery(
+    () => db.accessories.where('linkedDeviceId').equals(device.id).toArray(),
+    [device.id]
+  ) || [];
+
   const statusConfig = DEVICE_STATUS_CONFIG[device.status] || DEVICE_STATUS_CONFIG.other;
 
-  // Limpiar timers al desmontar
   useEffect(() => {
     return () => {
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
@@ -100,25 +110,31 @@ export const DeviceProfileView: React.FC<DeviceProfileViewProps> = ({
     ...(device.additionalPhotos || []),
   ];
 
-  const hasIdentifiers = !!(device.imei1 || device.imei2 || device.serialNumber || device.eid);
+  const hasIdentifiers = !!(device.imei1 || device.imei2 || device.serialNumber || device.eid || device.iccid || device.upc || device.fccId || device.ic);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Cabecera */}
       <div className="flex items-center justify-between">
-        <button onClick={onBack}
-          className="flex items-center space-x-2 text-xs font-semibold text-zinc-400 hover:text-white px-3 py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 rounded-xl transition-colors">
+        <button
+          onClick={onBack}
+          className="flex items-center space-x-2 text-xs font-semibold text-zinc-400 hover:text-white px-3 py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 rounded-xl transition-colors"
+        >
           <ArrowLeft className="w-4 h-4" />
           <span>Volver</span>
         </button>
         <div className="flex items-center space-x-2">
-          <button onClick={() => onEdit(device)}
-            className="flex items-center space-x-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white rounded-xl text-xs font-semibold transition-colors">
+          <button
+            onClick={() => onEdit(device)}
+            className="flex items-center space-x-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white rounded-xl text-xs font-semibold transition-colors"
+          >
             <Edit className="w-4 h-4" />
             <span>Editar</span>
           </button>
-          <button onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-xs font-semibold transition-colors">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center space-x-1.5 px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-xs font-semibold transition-colors"
+          >
             <Trash2 className="w-4 h-4" />
             <span>Eliminar</span>
           </button>
@@ -132,11 +148,16 @@ export const DeviceProfileView: React.FC<DeviceProfileViewProps> = ({
           <div className="md:col-span-5 bg-zinc-950 rounded-2xl border border-zinc-800 p-4 flex flex-col items-center justify-center min-h-[280px] relative group overflow-hidden">
             {device.mainPhoto ? (
               <>
-                <img src={device.mainPhoto} alt={device.model}
+                <img
+                  src={device.mainPhoto}
+                  alt={device.model}
                   className="w-full h-72 object-contain rounded-xl cursor-zoom-in"
-                  onClick={() => setSelectedPhotoModal(device.mainPhoto || null)} />
-                <button onClick={() => setSelectedPhotoModal(device.mainPhoto || null)}
-                  className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/70 hover:bg-black text-[10px] text-white rounded-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+                  onClick={() => setSelectedPhotoModal(device.mainPhoto || null)}
+                />
+                <button
+                  onClick={() => setSelectedPhotoModal(device.mainPhoto || null)}
+                  className="absolute bottom-3 right-3 px-2.5 py-1 bg-black/70 hover:bg-black text-[10px] text-white rounded-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   Ver en grande
                 </button>
               </>
@@ -185,12 +206,18 @@ export const DeviceProfileView: React.FC<DeviceProfileViewProps> = ({
                   <span>{device.modelNumber}</span>
                 </div>
               )}
+              {device.partNumber && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-300 font-mono">
+                  <span className="text-zinc-500">Part #:</span>
+                  <span>{device.partNumber}</span>
+                </div>
+              )}
             </div>
 
             {/* Identificadores con mascara y Reveal */}
             <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-blue-400" /> Identificadores Unicos
+                <ShieldCheck className="w-4 h-4 text-blue-400" /> Identificadores y Regulatorio
               </h4>
               <div className="space-y-2">
                 {device.imei1 && (
@@ -206,8 +233,24 @@ export const DeviceProfileView: React.FC<DeviceProfileViewProps> = ({
                     copiedField={copiedField} onCopy={copyToClipboard} copyError={copyError} />
                 )}
                 {device.eid && (
-                  <SecureField label="EID" value={device.eid} fieldName="eid"
+                  <SecureField label="EID (eSIM)" value={device.eid} fieldName="eid"
                     copiedField={copiedField} onCopy={copyToClipboard} copyError={copyError} />
+                )}
+                {device.iccid && (
+                  <SecureField label="ICCID (SIM)" value={device.iccid} fieldName="iccid"
+                    copiedField={copiedField} onCopy={copyToClipboard} copyError={copyError} />
+                )}
+                {device.upc && (
+                  <div className="flex items-center justify-between p-2.5 bg-zinc-900/60 rounded-xl border border-zinc-800/60 text-xs">
+                    <span className="text-zinc-400 font-medium">UPC</span>
+                    <span className="font-mono text-zinc-300">{device.upc}</span>
+                  </div>
+                )}
+                {device.fccId && (
+                  <div className="flex items-center justify-between p-2.5 bg-zinc-900/60 rounded-xl border border-zinc-800/60 text-xs">
+                    <span className="text-zinc-400 font-medium">FCC ID</span>
+                    <span className="font-mono text-zinc-300">{device.fccId}</span>
+                  </div>
                 )}
                 {!hasIdentifiers && (
                   <p className="text-xs text-zinc-500 py-1 italic">Sin identificadores registrados para este equipo.</p>
@@ -215,6 +258,70 @@ export const DeviceProfileView: React.FC<DeviceProfileViewProps> = ({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Accesorios para este Dispositivo */}
+        <div className="pt-4 border-t border-zinc-800/80 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+              <Package className="w-4 h-4 text-blue-400" />
+              <span>Accesorios para este Dispositivo ({linkedAccessories.length})</span>
+            </h4>
+            {onAddAccessoryForDevice && (
+              <button
+                onClick={() => onAddAccessoryForDevice(device.id)}
+                className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Vincular Accesorio</span>
+              </button>
+            )}
+          </div>
+
+          {linkedAccessories.length === 0 ? (
+            <div className="p-4 bg-zinc-950/40 rounded-2xl border border-zinc-800/60 text-center text-xs text-zinc-500">
+              No hay accesorios vinculados a este equipo. Puedes vincular covers, cables o cargadores.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {linkedAccessories.map((acc) => {
+                const accStatus = ACCESSORY_STATUS_CONFIG[acc.status] || ACCESSORY_STATUS_CONFIG.other;
+                return (
+                  <div
+                    key={acc.id}
+                    onClick={() => onSelectAccessory && onSelectAccessory(acc)}
+                    className="p-3 bg-zinc-950/80 hover:bg-zinc-850/80 border border-zinc-800 hover:border-zinc-700 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group"
+                  >
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {acc.mainPhoto ? (
+                          <img src={acc.mainPhoto} alt={acc.name} className="w-full h-full object-contain p-1" />
+                        ) : acc.category === 'charger' ? (
+                          <Zap className="w-5 h-5 text-zinc-500" />
+                        ) : (
+                          <Package className="w-5 h-5 text-zinc-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors truncate">
+                          {acc.name}
+                        </div>
+                        <div className="text-[10px] text-zinc-500 truncate">
+                          {acc.color ? `${acc.color} • ` : ''}
+                          {ACCESSORY_CATEGORY_LABELS[acc.category]}
+                          {acc.powerWatts ? ` • ${acc.powerWatts}` : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border flex-shrink-0 ${accStatus.bg} ${accStatus.text} ${accStatus.border}`}>
+                      {accStatus.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Compra y Garantia */}

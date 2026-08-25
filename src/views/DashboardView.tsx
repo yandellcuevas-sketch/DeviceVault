@@ -1,11 +1,14 @@
-﻿import React from 'react';
-import { Smartphone, Laptop, Tablet, Watch, Headphones, Box, PlusCircle, ArrowRight, Shield, Layers } from 'lucide-react';
+import React from 'react';
+import { Smartphone, Laptop, Tablet, Watch, Headphones, Box, PlusCircle, ArrowRight, Shield, Layers, Package } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db';
 import type { Device, DeviceType } from '../types/device';
+import type { CurrentView } from '../components/layout/Sidebar';
 import { DEVICE_STATUS_CONFIG, formatDate } from '../utils/formatters';
 
 interface DashboardViewProps {
   devices: Device[];
-  onNavigate: (view: any) => void;
+  onNavigate: (view: CurrentView) => void;
   onSelectDevice: (device: Device) => void;
 }
 
@@ -14,6 +17,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigate,
   onSelectDevice,
 }) => {
+  const accessories = useLiveQuery(() => db.accessories.toArray(), []) || [];
+
   const countByType = (type: DeviceType) => devices.filter((d) => d.type === type).length;
 
   const totalCount = devices.length;
@@ -24,7 +29,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const audioCount = countByType('audio');
   const othersCount = totalCount - (phonesCount + computersCount + tabletsCount + watchesCount + audioCount);
 
-  // Marcas más frecuentes
+  // Marcas mas frecuentes
   const brandCounts = devices.reduce((acc, d) => {
     acc[d.brand] = (acc[d.brand] || 0) + 1;
     return acc;
@@ -40,7 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .slice(0, 5);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Hero Welcome */}
       <div className="relative bg-gradient-to-r from-blue-950/40 via-zinc-900 to-zinc-900 border border-zinc-800/80 rounded-2xl p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -48,31 +53,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="p-1 bg-blue-500/20 text-blue-400 rounded-md">
               <Shield className="w-4 h-4" />
             </span>
-            <h2 className="text-xl font-bold text-white tracking-tight">Mi Bóveda de Dispositivos</h2>
+            <h2 className="text-xl font-bold text-white tracking-tight">Mi Boveda de Dispositivos</h2>
           </div>
           <p className="text-xs text-zinc-400">
-            Tienes <span className="font-semibold text-white">{totalCount}</span> equipos registrados de forma 100% privada y local.
+            Tienes <span className="font-semibold text-white">{totalCount}</span> equipos y{' '}
+            <span className="font-semibold text-white">{accessories.length}</span> accesorios registrados de forma 100% privada y local.
           </p>
         </div>
 
-        <button
-          onClick={() => onNavigate('register')}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer flex-shrink-0"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Registrar Dispositivo</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => onNavigate('register_accessory')}
+            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-xl text-xs font-semibold border border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>+ Accesorio</span>
+          </button>
+          <button
+            onClick={() => onNavigate('register')}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer flex-shrink-0"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Registrar Dispositivo</span>
+          </button>
+        </div>
       </div>
 
-      {/* Grid de Métricas Rápidas */}
+      {/* Grid de Metricas Rapidas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: 'Total Equipos', count: totalCount, icon: Layers, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: 'Teléfonos', count: phonesCount, icon: Smartphone, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+          { label: 'Telefonos', count: phonesCount, icon: Smartphone, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
           { label: 'Computadoras', count: computersCount, icon: Laptop, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
           { label: 'Tablets / iPads', count: tabletsCount, icon: Tablet, color: 'text-purple-400', bg: 'bg-purple-500/10' },
           { label: 'Watches', count: watchesCount, icon: Watch, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-          { label: 'Audio / Otros', count: audioCount + othersCount, icon: Headphones, color: 'text-rose-400', bg: 'bg-rose-500/10' },
+          { label: 'Accesorios', count: accessories.length, icon: Package, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
         ].map((stat, idx) => {
           const Icon = stat.icon;
           return (
@@ -97,7 +112,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Recientes (2 cols) */}
         <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800/80 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Últimos Registrados</h3>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Ultimos Registrados</h3>
             <button
               onClick={() => onNavigate('gallery')}
               className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
@@ -108,7 +123,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {recentlyAdded.length === 0 ? (
             <div className="py-12 text-center text-zinc-500 text-xs">
-              Aún no tienes dispositivos registrados. Haz clic en "Registrar Dispositivo" para comenzar.
+              Aun no tienes dispositivos registrados. Haz clic en "Registrar Dispositivo" para comenzar.
             </div>
           ) : (
             <div className="space-y-2">
@@ -160,7 +175,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {topBrands.length === 0 ? (
             <div className="py-12 text-center text-zinc-500 text-xs">
-              Sin datos de marcas aún.
+              Sin datos de marcas aun.
             </div>
           ) : (
             <div className="space-y-3">

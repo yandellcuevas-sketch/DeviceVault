@@ -1,22 +1,30 @@
-﻿import Dexie, { type Table } from 'dexie';
+import Dexie, { type Table } from 'dexie';
 import type { Device } from '../types/device';
+import type { Accessory } from '../types/accessory';
 
 export class DeviceVaultDatabase extends Dexie {
   devices!: Table<Device, string>;
+  accessories!: Table<Accessory, string>;
 
   constructor() {
     super('DeviceVaultDB');
     this.version(1).stores({
       devices: 'id, type, brand, model, imei1, imei2, serialNumber, eid, status, createdAt, updatedAt',
     });
+    this.version(2).stores({
+      devices: 'id, type, brand, model, imei1, imei2, serialNumber, eid, status, createdAt, updatedAt',
+      accessories: 'id, category, brand, name, serialNumber, linkedDeviceId, status, createdAt, updatedAt',
+    });
   }
 }
 
 export const db = new DeviceVaultDatabase();
 
-// Helper para generar UUIDs simples en cliente
+/**
+ * Genera un UUID v4 criptograficamente seguro.
+ */
 export function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {

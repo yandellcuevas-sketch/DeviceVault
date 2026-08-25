@@ -1,10 +1,12 @@
-﻿import React from 'react';
-import { LayoutDashboard, Smartphone, PlusCircle, Search, Database, Settings, Shield } from 'lucide-react';
+import React from 'react';
+import { LayoutDashboard, Smartphone, Package, PlusCircle, Search, Database, Settings, Shield } from 'lucide-react';
 
 export type CurrentView = 
   | 'dashboard' 
   | 'gallery' 
+  | 'accessories'
   | 'register' 
+  | 'register_accessory'
   | 'imei_lookup' 
   | 'backup' 
   | 'settings';
@@ -13,20 +15,23 @@ interface SidebarProps {
   currentView: CurrentView;
   onViewChange: (view: CurrentView) => void;
   deviceCount: number;
+  accessoryCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onViewChange,
   deviceCount,
+  accessoryCount = 0,
 }) => {
   const navItems = [
     { id: 'dashboard' as CurrentView, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'gallery' as CurrentView, label: 'Mis Dispositivos', icon: Smartphone, badge: deviceCount },
+    { id: 'accessories' as CurrentView, label: 'Mis Accesorios', icon: Package, badge: accessoryCount },
     { id: 'register' as CurrentView, label: 'Registrar Dispositivo', icon: PlusCircle },
     { id: 'imei_lookup' as CurrentView, label: 'IMEI / Serial Lookup', icon: Search },
     { id: 'backup' as CurrentView, label: 'Respaldo / Backup', icon: Database },
-    { id: 'settings' as CurrentView, label: 'Configuración', icon: Settings },
+    { id: 'settings' as CurrentView, label: 'Configuracion', icon: Settings },
   ];
 
   return (
@@ -41,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
               DEVICEVAULT
             </h1>
-            <p className="text-[11px] text-zinc-500 font-medium">Bóveda Local Personal</p>
+            <p className="text-[11px] text-zinc-500 font-medium">Boveda Local Personal</p>
           </div>
         </div>
 
@@ -85,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Almacenamiento:</span>
           <span className="font-mono text-emerald-400 font-bold">IndexedDB Local</span>
         </div>
-        <p className="text-[10px] text-zinc-600">100% Privado &bull; Cero Telemetría</p>
+        <p className="text-[10px] text-zinc-600">100% Privado &bull; Cero Telemetria</p>
       </div>
     </aside>
   );

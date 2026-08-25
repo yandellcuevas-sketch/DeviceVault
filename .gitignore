@@ -1,4 +1,4 @@
-﻿# Dependencies & Build artifacts
+# Dependencies & Build artifacts
 node_modules/
 dist/
 dist-ssr/
@@ -13,3 +13,11 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 *.log
+
+# Local Seed & Private Backups
+*seed*.json
+local-*.json
+*.local.json
+devicevault-seed*.json
+scratch/
+

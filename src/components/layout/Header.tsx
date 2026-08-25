@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Search, Plus, ShieldCheck } from 'lucide-react';
 import type { CurrentView } from './Sidebar';
 
@@ -19,18 +19,24 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Panel Principal';
       case 'gallery':
         return 'Mis Dispositivos';
+      case 'accessories':
+        return 'Mis Accesorios';
       case 'register':
         return 'Registrar Dispositivo';
+      case 'register_accessory':
+        return 'Registrar Accesorio';
       case 'imei_lookup':
-        return 'Búsqueda por IMEI / Serial';
+        return 'Busqueda por IMEI / Serial';
       case 'backup':
         return 'Centro de Respaldo';
       case 'settings':
-        return 'Configuración';
+        return 'Configuracion';
       default:
         return 'DeviceVault';
     }
   };
+
+  const showNewButton = currentView !== 'register' && currentView !== 'register_accessory';
 
   return (
     <header className="h-16 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80 px-6 flex items-center justify-between flex-shrink-0 z-10">
@@ -54,13 +60,13 @@ export const Header: React.FC<HeaderProps> = ({
           </kbd>
         </button>
 
-        {currentView !== 'register' && (
+        {showNewButton && (
           <button
             onClick={onRegisterClick}
             className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-600/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Nuevo</span>
+            <span>{currentView === 'accessories' ? 'Nuevo Accesorio' : 'Nuevo'}</span>
           </button>
         )}
       </div>

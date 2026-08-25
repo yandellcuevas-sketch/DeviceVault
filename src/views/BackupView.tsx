@@ -4,10 +4,11 @@ import { exportDatabaseToJSON, importDatabaseFromJSON, type ImportResult } from 
 
 interface BackupViewProps {
   deviceCount: number;
+  accessoryCount?: number;
   onRefresh: () => void;
 }
 
-export const BackupView: React.FC<BackupViewProps> = ({ deviceCount, onRefresh }) => {
+export const BackupView: React.FC<BackupViewProps> = ({ deviceCount, accessoryCount = 0, onRefresh }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -59,7 +60,7 @@ export const BackupView: React.FC<BackupViewProps> = ({ deviceCount, onRefresh }
           <h2 className="text-xl font-bold text-white tracking-tight">Centro de Respaldo y Restauracion</h2>
         </div>
         <p className="text-xs text-zinc-400">
-          Exporta todos tus dispositivos y fotos a un archivo JSON local o restaura una copia anterior.
+          Exporta todos tus dispositivos, accesorios y fotos a un archivo JSON local o restaura una copia anterior.
         </p>
       </div>
 
@@ -79,7 +80,7 @@ export const BackupView: React.FC<BackupViewProps> = ({ deviceCount, onRefresh }
             </div>
             <p>
               {importResult.success
-                ? `Se importaron ${importResult.count} dispositivos correctamente.`
+                ? `Se importaron ${importResult.count} dispositivos y ${importResult.accessoryCount || 0} accesorios correctamente.`
                 : importResult.error}
             </p>
             {importResult.warnings && importResult.warnings.length > 0 && (
@@ -122,7 +123,8 @@ export const BackupView: React.FC<BackupViewProps> = ({ deviceCount, onRefresh }
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed">
               El archivo contiene los metadatos, identificadores, fechas, precios y todas las fotografias de tus{' '}
-              <span className="text-white font-semibold">{deviceCount} dispositivos</span>.
+              <span className="text-white font-semibold">{deviceCount} dispositivos</span> y{' '}
+              <span className="text-white font-semibold">{accessoryCount} accesorios</span>.
             </p>
           </div>
           <button onClick={handleExport} disabled={isExporting}
@@ -163,7 +165,7 @@ export const BackupView: React.FC<BackupViewProps> = ({ deviceCount, onRefresh }
               {importMode === 'replace' && (
                 <p className="text-[11px] text-amber-400 flex items-center gap-1">
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  Reemplazar eliminara todos los dispositivos actuales y los reemplazara con el contenido del backup. La operacion es atomica y segura: si falla, tus datos actuales se conservan.
+                  Reemplazar eliminara todos los dispositivos y accesorios actuales y los sustituira con el respaldo. Transaccion 100% atomica con rollback seguro.
                 </p>
               )}
             </div>

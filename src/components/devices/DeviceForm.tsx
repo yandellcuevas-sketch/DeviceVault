@@ -18,6 +18,7 @@ const INITIAL_STATE: Omit<Device, 'id' | 'createdAt' | 'updatedAt'> = {
   model: '',
   customName: '',
   modelNumber: '',
+  partNumber: '',
   color: '',
   storage: '',
   ram: '',
@@ -26,6 +27,11 @@ const INITIAL_STATE: Omit<Device, 'id' | 'createdAt' | 'updatedAt'> = {
   imei2: '',
   serialNumber: '',
   eid: '',
+  iccid: '',
+  upc: '',
+  fccId: '',
+  ic: '',
+  country: '',
   phoneCarrier: '',
   purchaseDate: '',
   purchasePrice: undefined,
@@ -164,7 +170,6 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
     setIsSaving(true);
     try {
       const now = Date.now();
-      // Fix H-1: construir el objeto explicitamente sin cast as any
       const deviceToSave: Device = {
         id: initialDevice?.id || generateUUID(),
         type: formData.type as DeviceType,
@@ -172,6 +177,7 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
         model: formData.model.trim(),
         customName: formData.customName?.trim() || undefined,
         modelNumber: formData.modelNumber?.trim() || undefined,
+        partNumber: formData.partNumber?.trim() || undefined,
         color: formData.color?.trim() || undefined,
         storage: formData.storage?.trim() || undefined,
         ram: formData.ram?.trim() || undefined,
@@ -180,6 +186,11 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
         imei2: formData.imei2?.trim() || undefined,
         serialNumber: formData.serialNumber?.trim() || undefined,
         eid: formData.eid?.trim() || undefined,
+        iccid: formData.iccid?.trim() || undefined,
+        upc: formData.upc?.trim() || undefined,
+        fccId: formData.fccId?.trim() || undefined,
+        ic: formData.ic?.trim() || undefined,
+        country: formData.country?.trim() || undefined,
         phoneCarrier: formData.phoneCarrier?.trim() || undefined,
         purchaseDate: formData.purchaseDate || undefined,
         purchasePrice: formData.purchasePrice,
@@ -248,7 +259,6 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
           <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <div>{errorMsg}</div>
-            {/* Banner de duplicado con enlace */}
             {duplicateInfo && (
               <div className="mt-2 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-200 text-xs">
                 <span className="font-bold">DISPOSITIVO YA REGISTRADO:</span>{' '}
@@ -320,16 +330,16 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
               className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Nombre Personalizado (Opcional)</label>
-            <input type="text" name="customName" placeholder="Ej. Mi iPhone de trabajo"
-              value={formData.customName || ''} onChange={handleChange}
-              className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors" />
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Part Number (Numero de Pieza)</label>
+            <input type="text" name="partNumber" placeholder="Ej. MYW63LL/A, MU673LL/A..."
+              value={formData.partNumber || ''} onChange={handleChange}
+              className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white font-mono placeholder-zinc-600 focus:outline-none transition-colors" />
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">Numero de Modelo (Caja / Ajustes)</label>
-            <input type="text" name="modelNumber" placeholder="Ej. A3296, SM-S928B..."
+            <input type="text" name="modelNumber" placeholder="Ej. A3084, A2849, SM-S928B..."
               value={formData.modelNumber || ''} onChange={handleChange}
-              className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors" />
+              className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white font-mono placeholder-zinc-600 focus:outline-none transition-colors" />
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">Capacidad de Almacenamiento</label>
@@ -339,8 +349,14 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">Color / Acabado</label>
-            <input type="text" name="color" placeholder="Ej. Black Titanium, Space Gray, Blanco..."
+            <input type="text" name="color" placeholder="Ej. Natural Titanium, White Titanium, Silver..."
               value={formData.color || ''} onChange={handleChange}
+              className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Nombre Personalizado (Opcional)</label>
+            <input type="text" name="customName" placeholder="Ej. Mi iPhone de trabajo"
+              value={formData.customName || ''} onChange={handleChange}
               className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors" />
           </div>
         </div>
@@ -359,10 +375,10 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
         />
       </div>
 
-      {/* Identificadores */}
+      {/* Identificadores y Regulatorio */}
       <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl space-y-4">
         <div>
-          <h4 className="text-sm font-bold text-white uppercase tracking-wider">2. Identificadores Unicos</h4>
+          <h4 className="text-sm font-bold text-white uppercase tracking-wider">2. Identificadores y Regulatorio</h4>
           <p className="text-xs text-zinc-500 mt-0.5">Opcionales. Ningun campo es obligatorio para guardar.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -414,6 +430,22 @@ export const DeviceForm: React.FC<DeviceFormProps> = ({
             <input type="text" name="eid" placeholder="Ej. 89049032..."
               value={formData.eid || ''} onChange={handleChange}
               onBlur={(e) => handleIdentifierBlur('eid', e.target.value)}
+              className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white font-mono placeholder-zinc-600 focus:outline-none transition-colors" />
+          </div>
+
+          {/* ICCID */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">ICCID (SIM Fisica)</label>
+            <input type="text" name="iccid" placeholder="Ej. 89011201..."
+              value={formData.iccid || ''} onChange={handleChange}
+              className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white font-mono placeholder-zinc-600 focus:outline-none transition-colors" />
+          </div>
+
+          {/* UPC */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Codigo UPC / EAN</label>
+            <input type="text" name="upc" placeholder="Ej. 195949805073..."
+              value={formData.upc || ''} onChange={handleChange}
               className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-sm text-white font-mono placeholder-zinc-600 focus:outline-none transition-colors" />
           </div>
         </div>

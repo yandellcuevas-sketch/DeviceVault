@@ -1,13 +1,22 @@
-﻿import type { DeviceType, DeviceStatus } from '../types/device';
+import type { DeviceType, DeviceStatus } from '../types/device';
+import type { AccessoryCategory, AccessoryStatus } from '../types/accessory';
 
 export const DEVICE_TYPE_LABELS: Record<DeviceType, string> = {
-  phone: 'Teléfono',
+  phone: 'Telefono',
   tablet: 'Tablet / iPad',
   computer: 'Computadora / Laptop',
   watch: 'Smartwatch',
-  audio: 'Audio / Audífonos',
+  audio: 'Audio / Audifonos',
   accessory: 'Accesorio',
   other: 'Otro Dispositivo',
+};
+
+export const ACCESSORY_CATEGORY_LABELS: Record<AccessoryCategory, string> = {
+  case: 'Case / Cover',
+  charger: 'Cargador / Power',
+  magsafe: 'MagSafe',
+  audio_accessory: 'Accesorio de Audio',
+  other: 'Otro Accesorio',
 };
 
 export const DEVICE_STATUS_CONFIG: Record<DeviceStatus, { label: string; bg: string; text: string; border: string }> = {
@@ -30,7 +39,46 @@ export const DEVICE_STATUS_CONFIG: Record<DeviceStatus, { label: string; bg: str
     border: 'border-zinc-500/30',
   },
   repair: {
-    label: 'En reparación',
+    label: 'En reparacion',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
+    border: 'border-amber-500/30',
+  },
+  lost: {
+    label: 'Perdido',
+    bg: 'bg-red-500/10',
+    text: 'text-red-400',
+    border: 'border-red-500/30',
+  },
+  other: {
+    label: 'Otro',
+    bg: 'bg-purple-500/10',
+    text: 'text-purple-400',
+    border: 'border-purple-500/30',
+  },
+};
+
+export const ACCESSORY_STATUS_CONFIG: Record<AccessoryStatus, { label: string; bg: string; text: string; border: string }> = {
+  active: {
+    label: 'Activo / En uso',
+    bg: 'bg-emerald-500/10',
+    text: 'text-emerald-400',
+    border: 'border-emerald-500/30',
+  },
+  stored: {
+    label: 'Guardado',
+    bg: 'bg-blue-500/10',
+    text: 'text-blue-400',
+    border: 'border-blue-500/30',
+  },
+  sold: {
+    label: 'Vendido',
+    bg: 'bg-zinc-500/10',
+    text: 'text-zinc-400',
+    border: 'border-zinc-500/30',
+  },
+  repair: {
+    label: 'En reparacion',
     bg: 'bg-amber-500/10',
     text: 'text-amber-400',
     border: 'border-amber-500/30',
